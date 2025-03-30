@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overtime Calculator</title>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --success-color: #4cc9f0;
+      --warning-color: #f72585;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+      color: var(--dark-color);
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 1.1rem;
+    }
+
+    .calculator {
+      background-color: #fff;
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      margin-bottom: 20px;
+    }
+
+    .settings-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .form-group {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--dark-color);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+      outline: none;
+    }
+
+    .time-limits {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-bottom: 20px;
+    }
+
+    .time-option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .time-option input[type="radio"] {
+      width: auto;
+      margin-right: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--box-shadow);
+    }
+
+    th, td {
+      border: 1px solid #eee;
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+
+    tr:hover {
+      background-color: #e9ecef;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: #fff;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: background-color 0.3s, transform 0.2s;
+      flex: 1;
+    }
+
+    button:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+
+    button.success {
+      background-color: var(--success-color);
+    }
+
+    button.success:hover {
+      background-color: #3ba7cc;
+    }
+
+    button.warning {
+      background-color: var(--warning-color);
+    }
+
+    button.warning:hover {
+      background-color: #d61d72;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #e9f7fe;
+      border-left: 4px solid var(--primary-color);
+      border-radius: 4px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 20px;
+    }
+
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+    }
+
+    .centered {
+      text-align: center;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .button-group {
+        flex-direction: column;
+      }
+      
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Overtime Calculator</h1>
+      <p>Calculate your overtime hours and payment</p>
+    </div>
+
+    <div class="calculator">
+      <div class="settings-section">
+        <div class="form-group">
+          <label for="month">Month:</label>
+          <input type="text" id="month" placeholder="Enter month" required>
+        </div>
+        <div class="form-group">
+          <label for="year">Year:</label>
+          <input type="text" id="year" placeholder="Enter year" required>
+        </div>
+        <div class="form-group">
+          <label for="overtimeRate">Overtime Rate (per hour):</label>
+          <input type="number" id="overtimeRate" min="0" step="0.01" placeholder="Enter rate" required>
+        </div>
+      </div>
+
+      <div class="time-limits">
+        <label>Select Working Hours Time Limit:</label>
+        <div class="time-option">
+          <input type="radio" id="timeLimit1" name="timeLimit" value="option1" checked>
+          <label for="timeLimit1">6:30 AM to 8:30 PM (Default)</label>
+        </div>
+        <div class="time-option">
+          <input type="radio" id="timeLimit2" name="timeLimit" value="option2">
+          <label for="timeLimit2">6:00 AM to 10:00 PM</label>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Serial Number</th>
+            <th>Arrival Time</th>
+            <th>Departure Time</th>
+            <th>Day Type</th>
+            <th>Total Overtime</th>
+          </tr>
+        </thead>
+        <tbody id="dataRows">
+          <!-- Initial row for data entry -->
+          <tr class="dataRow">
+            <td><input type="number" class="serialNumber" min="1" value="1" required></td>
+            <td><input type="time" class="arrivalTime" required></td>
+            <td><input type="time" class="departureTime" required></td>
+            <td class="centered">
+              <div class="checkbox-group">
+                <div class="checkbox-wrapper">
+                  <input type="radio" name="dayType1" class="weekdayCheckbox" checked>
+                  <label>Weekday</label>
+                </div>
+                <div class="checkbox-wrapper">
+                  <input type="radio" name="dayType1" class="weekendCheckbox">
+                  <label>Weekend</label>
+                </div>
+                <div class="checkbox-wrapper">
+                  <input type="radio" name="dayType1" class="publicHolidayCheckbox">
+                  <label>Holiday</label>
+                </div>
+              </div>
+            </td>
+            <td class="totalOvertime">-</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="button-group">
+        <button onclick="addNextRow()">Add Row</button>
+        <button onclick="calculateTotalOvertime()" class="success">Calculate</button>
+        <button onclick="printPage()" class="warning">Print Report</button>
+      </div>
+
+      <div id="result" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    let rowCounter = 1;
+
+    function addNextRow() {
+      rowCounter++;
+      const dataRows = document.getElementById('dataRows');
+      const newRow = document.createElement('tr');
+      newRow.className = 'dataRow';
+      
+      newRow.innerHTML = `
+        <td><input type="number" class="serialNumber" min="1" value="${rowCounter}" required></td>
+        <td><input type="time" class="arrivalTime" required></td>
+        <td><input type="time" class="departureTime" required></td>
+        <td class="centered">
+          <div class="checkbox-group">
+            <div class="checkbox-wrapper">
+              <input type="radio" name="dayType${rowCounter}" class="weekdayCheckbox" checked>
+              <label>Weekday</label>
+            </div>
+            <div class="checkbox-wrapper">
+              <input type="radio" name="dayType${rowCounter}" class="weekendCheckbox">
+              <label>Weekend</label>
+            </div>
+            <div class="checkbox-wrapper">
+              <input type="radio" name="dayType${rowCounter}" class="publicHolidayCheckbox">
+              <label>Holiday</label>
+            </div>
+          </div>
+        </td>
+        <td class="totalOvertime">-</td>
+      `;
+
+      dataRows.appendChild(newRow);
+    }
+
+    function calculateTotalOvertime() {
+      const rows = document.querySelectorAll('.dataRow');
+      let totalOvertime = 0;
+      
+      // Get selected time limit option
+      const timeLimit1Selected = document.getElementById('timeLimit1').checked;
+      
+      // Set working hours for weekdays based on selected option
+      const workingHoursStart = new Date(`1970-01-01T08:30:00`);
+      const workingHoursEnd = new Date(`1970-01-01T16:15:00`);
+      
+      // Set special hours based on selected option
+      const specialWorkingHoursStart = timeLimit1Selected 
+        ? new Date('1970-01-01T06:30:00') 
+        : new Date('1970-01-01T06:00:00');
+        
+      const specialWorkingHoursEnd = timeLimit1Selected 
+        ? new Date('1970-01-01T20:30:00') 
+        : new Date('1970-01-01T22:00:00');  // Changed to 10:00 PM (22:00)
+      
+      // Calculate hours difference for special time
+      const specialHoursDiff = (specialWorkingHoursEnd - specialWorkingHoursStart) / (1000 * 60 * 60);
+
+      rows.forEach(row => {
+        const arrivalTime = row.querySelector('.arrivalTime').value;
+        const departureTime = row.querySelector('.departureTime').value;
+        
+        if (!arrivalTime || !departureTime) {
+          row.querySelector('.totalOvertime').textContent = '-';
+          return;
+        }
+        
+        const weekdayCheckbox = row.querySelector('.weekdayCheckbox').checked;
+        const weekendCheckbox = row.querySelector('.weekendCheckbox').checked;
+        const publicHolidayCheckbox = row.querySelector('.publicHolidayCheckbox').checked;
+
+        const arrival = new Date(`1970-01-01T${arrivalTime}`);
+        const departure = new Date(`1970-01-01T${departureTime}`);
+
+        let overtimeHours = 0;
+
+        // Adjust overtime based on day type
+        if (weekdayCheckbox) {
+          overtimeHours = calculateWeekdayOvertime(arrival, departure, workingHoursStart, workingHoursEnd);
+        } else if (weekendCheckbox || publicHolidayCheckbox) {
+          overtimeHours = calculateSpecialOvertime(arrival, departure, specialWorkingHoursStart, specialWorkingHoursEnd, specialHoursDiff);
+        }
+
+        totalOvertime += overtimeHours;
+        row.querySelector('.totalOvertime').textContent = overtimeHours.toFixed(2);
+      });
+
+      // Calculate overtime pay
+      const overtimeRate = parseFloat(document.getElementById('overtimeRate').value) || 0;
+      const totalOvertimePay = totalOvertime * overtimeRate;
+
+      // Display the results
+      const resultElement = document.getElementById('result');
+      resultElement.innerHTML = `
+        <h3>Overtime Summary</h3>
+        <p>Total Overtime Hours: <strong>${totalOvertime.toFixed(2)} hours</strong></p>
+        <p>Overtime Rate: <strong>${overtimeRate.toFixed(2)} per hour</strong></p>
+        <p>Total Overtime Pay: <strong>${totalOvertimePay.toFixed(2)} LKR</strong></p>
+      `;
+      resultElement.style.display = 'block';
+    }
+
+    function calculateWeekdayOvertime(arrival, departure, workingHoursStart, workingHoursEnd) {
+      let totalOvertimeHours = 0;
+
+      if (arrival < workingHoursStart) {
+        totalOvertimeHours += Math.min((workingHoursStart - arrival) / (1000 * 60 * 60), 8); // Maximum 8 hours morning overtime
+      }
+
+      if (departure > workingHoursEnd) {
+        totalOvertimeHours += Math.min((departure - workingHoursEnd) / (1000 * 60 * 60), 8); // Maximum 8 hours afternoon overtime
+      }
+
+      return totalOvertimeHours;
+    }
+
+    function calculateSpecialOvertime(arrival, departure, specialWorkingHoursStart, specialWorkingHoursEnd, specialHoursDiff) {
+      // For weekends and public holidays
+      if (arrival < specialWorkingHoursStart) {
+        arrival = specialWorkingHoursStart;
+      }
+      
+      if (departure > specialWorkingHoursEnd) {
+        departure = specialWorkingHoursEnd;
+      }
+      
+      if (arrival >= departure) {
+        return 0;
+      }
+      
+      // Calculate the actual hours worked within the allowed time frame
+      const hoursWorked = (departure - arrival) / (1000 * 60 * 60);
+      
+      // Return the minimum of hours worked and the maximum special hours
+      return Math.min(hoursWorked, specialHoursDiff);
+    }
+
+    function printPage() {
+      // Get the entered year and month
+      const enteredYear = document.getElementById('year').value;
+      const enteredMonth = document.getElementById('month').value;
+      const overtimeRate = document.getElementById('overtimeRate').value;
+      
+      // Calculate total overtime before printing
+      calculateTotalOvertime();
+      
+      // Get selected time limit
+      const timeLimit = document.getElementById('timeLimit1').checked ? 
+        "6:30 AM to 8:30 PM" : "6:00 AM to 10:00 PM";  // Updated time limit option
+
+      // Open a new window for printing
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>Overtime Report - ${enteredMonth} ${enteredYear}</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              margin: 30px;
+              color: #333;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .header h1 {
+              margin-bottom: 5px;
+              color: #4361ee;
+            }
+            .info {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 20px;
+              padding: 15px;
+              background-color: #f8f9fa;
+              border-radius: 8px;
+            }
+            .info-item {
+              flex: 1;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 30px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 12px;
+              text-align: center;
+            }
+            th {
+              background-color: #4361ee;
+              color: white;
+            }
+            tr:nth-child(even) {
+              background-color: #f8f9fa;
+            }
+            .summary {
+              background-color: #e9f7fe;
+              padding: 20px;
+              border-radius: 8px;
+              border-left: 4px solid #4361ee;
+            }
+            .footer {
+              margin-top: 40px;
+              display: flex;
+              justify-content: space-between;
+            }
+            .signature {
+              margin-top: 50px;
+              border-top: 1px solid #ddd;
+              padding-top: 10px;
+              width: 200px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Overtime Report</h1>
+            <p>Generated on ${new Date().toLocaleDateString()}</p>
+          </div>
+
+          <div class="info">
+            <div class="info-item">
+              <p><strong>Month:</strong> ${enteredMonth}</p>
+              <p><strong>Year:</strong> ${enteredYear}</p>
+            </div>
+            <div class="info-item">
+              <p><strong>Overtime Rate:</strong> ${overtimeRate} LKR/hour</p>
+              <p><strong>Time Limit:</strong> ${timeLimit}</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Serial Number</th>
+                <th>Arrival Time</th>
+                <th>Departure Time</th>
+                <th>Weekday</th>
+                <th>Weekend</th>
+                <th>Public Holiday</th>
+                <th>Overtime Hours</th>
+              </tr>
+            </thead>
+            <tbody>
+      `);
+
+      // Add rows to the print window
+      const rows = document.querySelectorAll('.dataRow');
+      let totalOvertimeForPrint = 0;
+      
+      rows.forEach(row => {
+        const serialNumber = row.querySelector('.serialNumber').value;
+        const arrivalTime = row.querySelector('.arrivalTime').value;
+        const departureTime = row.querySelector('.departureTime').value;
+        const weekdayCheckbox = row.querySelector('.weekdayCheckbox').checked;
+        const weekendCheckbox = row.querySelector('.weekendCheckbox').checked;
+        const publicHolidayCheckbox = row.querySelector('.publicHolidayCheckbox').checked;
+        const totalOvertime = row.querySelector('.totalOvertime').textContent;
+        
+        if (totalOvertime !== '-') {
+          totalOvertimeForPrint += parseFloat(totalOvertime);
+        }
+
+        printWindow.document.write(`
+          <tr>
+            <td>${serialNumber}</td>
+            <td>${arrivalTime}</td>
+            <td>${departureTime}</td>
+            <td>${weekdayCheckbox ? 'Yes' : 'No'}</td>
+            <td>${weekendCheckbox ? 'Yes' : 'No'}</td>
+            <td>${publicHolidayCheckbox ? 'Yes' : 'No'}</td>
+            <td>${totalOvertime}</td>
+          </tr>
+        `);
+      });
+
+      // Add summary and finish the HTML
+      const totalOvertimePay = totalOvertimeForPrint * parseFloat(overtimeRate);
+      
+      printWindow.document.write(`
+            </tbody>
+          </table>
+
+          <div class="summary">
+            <h3>Summary</h3>
+            <p><strong>Total Overtime Hours:</strong> ${totalOvertimeForPrint.toFixed(2)} hours</p>
+            <p><strong>Total Overtime Pay:</strong> ${totalOvertimePay.toFixed(2)} LKR</p>
+          </div>
+
+          <div class="footer">
+            <div class="signature">Employee Signature</div>
+            <div class="signature">Manager Signature</div>
+          </div>
+        </body>
+        </html>
+      `);
+
+      // Focus on the new window and initiate printing
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+  </script>
+</div>
+
+</body>
+</html>
