@@ -5,12 +5,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Overtime Calculator</title>
+  <!-- Include SheetJS library for Excel export -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --primary-color: #4361ee;
       --secondary-color: #3f37c9;
       --accent-color: #4895ef;
       --success-color: #4cc9f0;
+      --excel-color: #217346;
       --warning-color: #f72585;
       --light-color: #f8f9fa;
       --dark-color: #212529;
@@ -27,7 +30,7 @@
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
@@ -142,6 +145,7 @@
       display: flex;
       gap: 10px;
       margin-top: 20px;
+      flex-wrap: wrap;
     }
 
     button {
@@ -155,6 +159,7 @@
       font-weight: 500;
       transition: background-color 0.3s, transform 0.2s;
       flex: 1;
+      min-width: 150px;
     }
 
     button:hover {
@@ -168,6 +173,14 @@
 
     button.success:hover {
       background-color: #3ba7cc;
+    }
+
+    button.excel {
+      background-color: var(--excel-color);
+    }
+
+    button.excel:hover {
+      background-color: #1a5c3a;
     }
 
     button.warning {
@@ -189,6 +202,7 @@
     .checkbox-group {
       display: flex;
       gap: 20px;
+      justify-content: center;
     }
 
     .checkbox-wrapper {
@@ -196,13 +210,81 @@
       align-items: center;
     }
 
-    .checkbox-wrapper input[type="checkbox"] {
+    .checkbox-wrapper input[type="radio"] {
       width: auto;
       margin-right: 8px;
     }
 
     .centered {
       text-align: center;
+    }
+
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .delete-btn:hover {
+      background-color: #c82333;
+    }
+
+    .summary-card {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .summary-item {
+      flex: 1;
+      min-width: 200px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: var(--border-radius);
+      text-align: center;
+    }
+
+    .summary-item h3 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+
+    .summary-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--dark-color);
+    }
+
+    .export-options {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-top: 20px;
+      display: none;
+    }
+
+    .export-options.show {
+      display: block;
+    }
+
+    .export-options label {
+      margin-bottom: 5px;
+    }
+
+    .export-checkbox {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .export-checkbox input[type="checkbox"] {
+      width: auto;
+      margin-right: 10px;
     }
 
     /* Responsive adjustments */
@@ -215,6 +297,11 @@
         display: block;
         overflow-x: auto;
       }
+      
+      .checkbox-group {
+        flex-direction: column;
+        gap: 5px;
+      }
     }
   </style>
 </head>
@@ -223,22 +310,40 @@
   <div class="container">
     <div class="header">
       <h1>Overtime Calculator</h1>
-      <p>Calculate your overtime hours and payment</p>
+      <p>Calculate your overtime hours and payment with export functionality</p>
     </div>
 
     <div class="calculator">
       <div class="settings-section">
         <div class="form-group">
           <label for="month">Month:</label>
-          <input type="text" id="month" placeholder="Enter month" required>
+          <select id="month" required>
+            <option value="">Select Month</option>
+            <option value="January">January</option>
+            <option value="February">February</option>
+            <option value="March">March</option>
+            <option value="April">April</option>
+            <option value="May">May</option>
+            <option value="June">June</option>
+            <option value="July">July</option>
+            <option value="August">August</option>
+            <option value="September">September</option>
+            <option value="October">October</option>
+            <option value="November">November</option>
+            <option value="December">December</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="year">Year:</label>
-          <input type="text" id="year" placeholder="Enter year" required>
+          <input type="number" id="year" min="2000" max="2100" value="2023" placeholder="Enter year" required>
         </div>
         <div class="form-group">
           <label for="overtimeRate">Overtime Rate (per hour):</label>
-          <input type="number" id="overtimeRate" min="0" step="0.01" placeholder="Enter rate" required>
+          <input type="number" id="overtimeRate" min="0" step="0.01" placeholder="Enter rate" value="500" required>
+        </div>
+        <div class="form-group">
+          <label for="employeeName">Employee Name:</label>
+          <input type="text" id="employeeName" placeholder="Enter employee name">
         </div>
       </div>
 
@@ -252,22 +357,41 @@
           <input type="radio" id="timeLimit2" name="timeLimit" value="option2">
           <label for="timeLimit2">6:00 AM to 10:00 PM</label>
         </div>
+        <div class="time-option">
+          <input type="radio" id="timeLimit3" name="timeLimit" value="option3">
+          <label for="timeLimit3">Custom Hours</label>
+        </div>
+        <div id="customHours" style="display: none; margin-top: 10px;">
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group">
+              <label for="customStart">Start Time:</label>
+              <input type="time" id="customStart" value="06:30">
+            </div>
+            <div class="form-group">
+              <label for="customEnd">End Time:</label>
+              <input type="time" id="customEnd" value="20:30">
+            </div>
+          </div>
+        </div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Serial Number</th>
+            <th>Serial No.</th>
+            <th>Date</th>
             <th>Arrival Time</th>
             <th>Departure Time</th>
             <th>Day Type</th>
             <th>Total Overtime</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="dataRows">
           <!-- Initial row for data entry -->
           <tr class="dataRow">
             <td><input type="number" class="serialNumber" min="1" value="1" required></td>
+            <td><input type="date" class="entryDate" value="" required></td>
             <td><input type="time" class="arrivalTime" required></td>
             <td><input type="time" class="departureTime" required></td>
             <td class="centered">
@@ -287,22 +411,100 @@
               </div>
             </td>
             <td class="totalOvertime">-</td>
+            <td><button class="delete-btn" onclick="deleteRow(this)">Delete</button></td>
           </tr>
         </tbody>
       </table>
 
       <div class="button-group">
         <button onclick="addNextRow()">Add Row</button>
+        <button onclick="addMultipleRows()">Add 5 Rows</button>
         <button onclick="calculateTotalOvertime()" class="success">Calculate</button>
+        <button onclick="toggleExportOptions()" class="excel">Export Options</button>
         <button onclick="printPage()" class="warning">Print Report</button>
+        <button onclick="clearAllData()">Clear All</button>
+      </div>
+
+      <div class="export-options" id="exportOptions">
+        <h3>Export Options</h3>
+        <div class="export-checkbox">
+          <input type="checkbox" id="exportSummary" checked>
+          <label for="exportSummary">Include Summary</label>
+        </div>
+        <div class="export-checkbox">
+          <input type="checkbox" id="exportDetails" checked>
+          <label for="exportDetails">Include Detailed Data</label>
+        </div>
+        <div class="export-checkbox">
+          <input type="checkbox" id="exportFormulas" checked>
+          <label for="exportFormulas">Include Excel Formulas</label>
+        </div>
+        <div class="button-group">
+          <button onclick="exportToExcel()" class="excel">Export to Excel</button>
+          <button onclick="exportToCSV()" class="success">Export to CSV</button>
+        </div>
       </div>
 
       <div id="result" style="display: none;"></div>
+      
+      <div class="summary-card" id="summaryCard" style="display: none;">
+        <div class="summary-item">
+          <h3>Total Overtime Hours</h3>
+          <div class="summary-value" id="totalHours">0.00</div>
+          <p>hours</p>
+        </div>
+        <div class="summary-item">
+          <h3>Overtime Rate</h3>
+          <div class="summary-value" id="rateDisplay">0.00</div>
+          <p>per hour</p>
+        </div>
+        <div class="summary-item">
+          <h3>Total Overtime Pay</h3>
+          <div class="summary-value" id="totalPay">0.00</div>
+          <p>LKR</p>
+        </div>
+        <div class="summary-item">
+          <h3>Number of Days</h3>
+          <div class="summary-value" id="totalDays">0</div>
+          <p>days</p>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     let rowCounter = 1;
+    let totalOvertime = 0;
+    let totalOvertimePay = 0;
+    
+    // Initialize date to today
+    document.addEventListener('DOMContentLoaded', function() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+      
+      document.querySelector('.entryDate').value = dateString;
+      document.getElementById('year').value = year;
+      
+      // Set month based on current month
+      const monthNames = ["January", "February", "March", "April", "May", "June",
+                         "July", "August", "September", "October", "November", "December"];
+      document.getElementById('month').value = monthNames[today.getMonth()];
+    });
+    
+    // Handle custom time limit selection
+    document.querySelectorAll('input[name="timeLimit"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        const customHoursDiv = document.getElementById('customHours');
+        if (this.id === 'timeLimit3') {
+          customHoursDiv.style.display = 'block';
+        } else {
+          customHoursDiv.style.display = 'none';
+        }
+      });
+    });
 
     function addNextRow() {
       rowCounter++;
@@ -310,8 +512,23 @@
       const newRow = document.createElement('tr');
       newRow.className = 'dataRow';
       
+      // Calculate next date (tomorrow)
+      const prevRow = dataRows.lastElementChild;
+      let nextDate = new Date();
+      if (prevRow) {
+        const prevDateInput = prevRow.querySelector('.entryDate');
+        if (prevDateInput && prevDateInput.value) {
+          const prevDate = new Date(prevDateInput.value);
+          prevDate.setDate(prevDate.getDate() + 1);
+          nextDate = prevDate;
+        }
+      }
+      
+      const dateString = nextDate.toISOString().split('T')[0];
+      
       newRow.innerHTML = `
         <td><input type="number" class="serialNumber" min="1" value="${rowCounter}" required></td>
+        <td><input type="date" class="entryDate" value="${dateString}" required></td>
         <td><input type="time" class="arrivalTime" required></td>
         <td><input type="time" class="departureTime" required></td>
         <td class="centered">
@@ -331,30 +548,98 @@
           </div>
         </td>
         <td class="totalOvertime">-</td>
+        <td><button class="delete-btn" onclick="deleteRow(this)">Delete</button></td>
       `;
 
       dataRows.appendChild(newRow);
     }
+    
+    function addMultipleRows() {
+      for (let i = 0; i < 5; i++) {
+        addNextRow();
+      }
+    }
+    
+    function deleteRow(button) {
+      const row = button.closest('tr');
+      if (document.querySelectorAll('.dataRow').length > 1) {
+        row.remove();
+        updateSerialNumbers();
+        calculateTotalOvertime();
+      } else {
+        alert("You cannot delete the last row. You can clear the data instead.");
+      }
+    }
+    
+    function updateSerialNumbers() {
+      const rows = document.querySelectorAll('.dataRow');
+      rows.forEach((row, index) => {
+        row.querySelector('.serialNumber').value = index + 1;
+      });
+      rowCounter = rows.length;
+    }
+    
+    function clearAllData() {
+      if (confirm("Are you sure you want to clear all data?")) {
+        const dataRows = document.getElementById('dataRows');
+        // Keep only the first row
+        while (dataRows.children.length > 1) {
+          dataRows.removeChild(dataRows.lastChild);
+        }
+        
+        // Clear the first row's data
+        const firstRow = dataRows.querySelector('.dataRow');
+        firstRow.querySelector('.serialNumber').value = 1;
+        firstRow.querySelector('.arrivalTime').value = '';
+        firstRow.querySelector('.departureTime').value = '';
+        firstRow.querySelector('.weekdayCheckbox').checked = true;
+        firstRow.querySelector('.totalOvertime').textContent = '-';
+        
+        // Reset counters
+        rowCounter = 1;
+        totalOvertime = 0;
+        totalOvertimePay = 0;
+        
+        // Clear results
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('summaryCard').style.display = 'none';
+      }
+    }
 
     function calculateTotalOvertime() {
       const rows = document.querySelectorAll('.dataRow');
-      let totalOvertime = 0;
+      totalOvertime = 0;
+      let validRows = 0;
       
       // Get selected time limit option
       const timeLimit1Selected = document.getElementById('timeLimit1').checked;
+      const timeLimit2Selected = document.getElementById('timeLimit2').checked;
+      const timeLimit3Selected = document.getElementById('timeLimit3').checked;
       
-      // Set working hours for weekdays based on selected option
-      const workingHoursStart = new Date(`1970-01-01T08:30:00`);
-      const workingHoursEnd = new Date(`1970-01-01T16:15:00`);
+      // Set working hours based on selected option
+      let workingHoursStart, workingHoursEnd, specialWorkingHoursStart, specialWorkingHoursEnd;
       
-      // Set special hours based on selected option
-      const specialWorkingHoursStart = timeLimit1Selected 
-        ? new Date('1970-01-01T06:30:00') 
-        : new Date('1970-01-01T06:00:00');
-        
-      const specialWorkingHoursEnd = timeLimit1Selected 
-        ? new Date('1970-01-01T20:30:00') 
-        : new Date('1970-01-01T22:00:00');  // Changed to 10:00 PM (22:00)
+      if (timeLimit1Selected) {
+        // Option 1: 6:30 AM to 8:30 PM
+        workingHoursStart = new Date(`1970-01-01T08:30:00`);
+        workingHoursEnd = new Date(`1970-01-01T16:15:00`);
+        specialWorkingHoursStart = new Date('1970-01-01T06:30:00');
+        specialWorkingHoursEnd = new Date('1970-01-01T20:30:00');
+      } else if (timeLimit2Selected) {
+        // Option 2: 6:00 AM to 10:00 PM
+        workingHoursStart = new Date(`1970-01-01T08:30:00`);
+        workingHoursEnd = new Date(`1970-01-01T16:15:00`);
+        specialWorkingHoursStart = new Date('1970-01-01T06:00:00');
+        specialWorkingHoursEnd = new Date('1970-01-01T22:00:00');
+      } else if (timeLimit3Selected) {
+        // Option 3: Custom hours
+        const customStart = document.getElementById('customStart').value;
+        const customEnd = document.getElementById('customEnd').value;
+        workingHoursStart = new Date(`1970-01-01T08:30:00`);
+        workingHoursEnd = new Date(`1970-01-01T16:15:00`);
+        specialWorkingHoursStart = new Date(`1970-01-01T${customStart}`);
+        specialWorkingHoursEnd = new Date(`1970-01-01T${customEnd}`);
+      }
       
       // Calculate hours difference for special time
       const specialHoursDiff = (specialWorkingHoursEnd - specialWorkingHoursStart) / (1000 * 60 * 60);
@@ -368,6 +653,7 @@
           return;
         }
         
+        validRows++;
         const weekdayCheckbox = row.querySelector('.weekdayCheckbox').checked;
         const weekendCheckbox = row.querySelector('.weekendCheckbox').checked;
         const publicHolidayCheckbox = row.querySelector('.publicHolidayCheckbox').checked;
@@ -390,7 +676,7 @@
 
       // Calculate overtime pay
       const overtimeRate = parseFloat(document.getElementById('overtimeRate').value) || 0;
-      const totalOvertimePay = totalOvertime * overtimeRate;
+      totalOvertimePay = totalOvertime * overtimeRate;
 
       // Display the results
       const resultElement = document.getElementById('result');
@@ -399,8 +685,19 @@
         <p>Total Overtime Hours: <strong>${totalOvertime.toFixed(2)} hours</strong></p>
         <p>Overtime Rate: <strong>${overtimeRate.toFixed(2)} per hour</strong></p>
         <p>Total Overtime Pay: <strong>${totalOvertimePay.toFixed(2)} LKR</strong></p>
+        <p>Number of Days with Overtime: <strong>${validRows}</strong></p>
       `;
       resultElement.style.display = 'block';
+      
+      // Update summary card
+      document.getElementById('totalHours').textContent = totalOvertime.toFixed(2);
+      document.getElementById('rateDisplay').textContent = overtimeRate.toFixed(2);
+      document.getElementById('totalPay').textContent = totalOvertimePay.toFixed(2);
+      document.getElementById('totalDays').textContent = validRows;
+      document.getElementById('summaryCard').style.display = 'flex';
+      
+      // Scroll to results
+      resultElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function calculateWeekdayOvertime(arrival, departure, workingHoursStart, workingHoursEnd) {
@@ -437,19 +734,203 @@
       // Return the minimum of hours worked and the maximum special hours
       return Math.min(hoursWorked, specialHoursDiff);
     }
+    
+    function toggleExportOptions() {
+      const exportOptions = document.getElementById('exportOptions');
+      exportOptions.classList.toggle('show');
+    }
+    
+    function exportToExcel() {
+      // Calculate totals first
+      calculateTotalOvertime();
+      
+      // Get data for export
+      const month = document.getElementById('month').value;
+      const year = document.getElementById('year').value;
+      const employeeName = document.getElementById('employeeName').value || 'Employee';
+      const overtimeRate = parseFloat(document.getElementById('overtimeRate').value) || 0;
+      const timeLimit = document.getElementById('timeLimit1').checked ? 
+        "6:30 AM to 8:30 PM" : document.getElementById('timeLimit2').checked ? 
+        "6:00 AM to 10:00 PM" : 
+        `Custom: ${document.getElementById('customStart').value} to ${document.getElementById('customEnd').value}`;
+      
+      // Prepare data array
+      const data = [];
+      
+      // Add header information
+      data.push(["OVERTIME REPORT"]);
+      data.push([]);
+      data.push(["Employee:", employeeName]);
+      data.push(["Month:", month]);
+      data.push(["Year:", year]);
+      data.push(["Overtime Rate:", overtimeRate]);
+      data.push(["Time Limit:", timeLimit]);
+      data.push(["Report Generated:", new Date().toLocaleDateString()]);
+      data.push([]);
+      
+      // Check what to include
+      const includeSummary = document.getElementById('exportSummary').checked;
+      const includeDetails = document.getElementById('exportDetails').checked;
+      const includeFormulas = document.getElementById('exportFormulas').checked;
+      
+      if (includeSummary) {
+        data.push(["SUMMARY"]);
+        data.push(["Total Overtime Hours:", totalOvertime]);
+        data.push(["Total Overtime Pay (LKR):", totalOvertimePay]);
+        data.push([]);
+      }
+      
+      if (includeDetails) {
+        data.push(["DETAILED OVERTIME DATA"]);
+        data.push(["Serial No.", "Date", "Arrival Time", "Departure Time", "Day Type", "Overtime Hours", "Overtime Pay (LKR)"]);
+        
+        const rows = document.querySelectorAll('.dataRow');
+        rows.forEach(row => {
+          const serialNumber = row.querySelector('.serialNumber').value;
+          const entryDate = row.querySelector('.entryDate').value;
+          const arrivalTime = row.querySelector('.arrivalTime').value;
+          const departureTime = row.querySelector('.departureTime').value;
+          
+          // Determine day type
+          let dayType = "Weekday";
+          if (row.querySelector('.weekendCheckbox').checked) dayType = "Weekend";
+          if (row.querySelector('.publicHolidayCheckbox').checked) dayType = "Holiday";
+          
+          const overtimeHours = parseFloat(row.querySelector('.totalOvertime').textContent) || 0;
+          const overtimePay = overtimeHours * overtimeRate;
+          
+          if (includeFormulas && overtimeHours > 0) {
+            // In a real Excel export, we could add formulas here
+            data.push([serialNumber, entryDate, arrivalTime, departureTime, dayType, overtimeHours, overtimePay]);
+          } else {
+            data.push([serialNumber, entryDate, arrivalTime, departureTime, dayType, overtimeHours, overtimePay]);
+          }
+        });
+        
+        // Add totals row
+        if (includeFormulas) {
+          data.push(["TOTAL", "", "", "", "", `=SUM(F${data.length - rows.length + 1}:F${data.length})`, `=SUM(G${data.length - rows.length + 1}:G${data.length})`]);
+        } else {
+          data.push(["TOTAL", "", "", "", "", totalOvertime, totalOvertimePay]);
+        }
+      }
+      
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      
+      // Set column widths
+      const wscols = [
+        { wch: 10 }, // Serial No.
+        { wch: 12 }, // Date
+        { wch: 12 }, // Arrival Time
+        { wch: 12 }, // Departure Time
+        { wch: 10 }, // Day Type
+        { wch: 15 }, // Overtime Hours
+        { wch: 18 }  // Overtime Pay
+      ];
+      ws['!cols'] = wscols;
+      
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Overtime Report");
+      
+      // Generate filename
+      const filename = `Overtime_Report_${employeeName.replace(/\s+/g, '_')}_${month}_${year}.xlsx`;
+      
+      // Save file
+      XLSX.writeFile(wb, filename);
+      
+      // Show success message
+      alert(`Excel file "${filename}" has been generated successfully!`);
+    }
+    
+    function exportToCSV() {
+      // Calculate totals first
+      calculateTotalOvertime();
+      
+      // Get data for export
+      const month = document.getElementById('month').value;
+      const year = document.getElementById('year').value;
+      const employeeName = document.getElementById('employeeName').value || 'Employee';
+      const overtimeRate = parseFloat(document.getElementById('overtimeRate').value) || 0;
+      
+      // Prepare CSV content
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      // Add header information
+      csvContent += "OVERTIME REPORT\r\n\r\n";
+      csvContent += `Employee:,${employeeName}\r\n`;
+      csvContent += `Month:,${month}\r\n`;
+      csvContent += `Year:,${year}\r\n`;
+      csvContent += `Overtime Rate:,${overtimeRate}\r\n`;
+      csvContent += `Report Generated:,${new Date().toLocaleDateString()}\r\n`;
+      csvContent += `Total Overtime Hours:,${totalOvertime}\r\n`;
+      csvContent += `Total Overtime Pay:,${totalOvertimePay}\r\n\r\n`;
+      
+      // Add detailed data header
+      csvContent += "Serial No.,Date,Arrival Time,Departure Time,Day Type,Overtime Hours,Overtime Pay (LKR)\r\n";
+      
+      // Add rows
+      const rows = document.querySelectorAll('.dataRow');
+      rows.forEach(row => {
+        const serialNumber = row.querySelector('.serialNumber').value;
+        const entryDate = row.querySelector('.entryDate').value;
+        const arrivalTime = row.querySelector('.arrivalTime').value;
+        const departureTime = row.querySelector('.departureTime').value;
+        
+        // Determine day type
+        let dayType = "Weekday";
+        if (row.querySelector('.weekendCheckbox').checked) dayType = "Weekend";
+        if (row.querySelector('.publicHolidayCheckbox').checked) dayType = "Holiday";
+        
+        const overtimeHours = parseFloat(row.querySelector('.totalOvertime').textContent) || 0;
+        const overtimePay = overtimeHours * overtimeRate;
+        
+        csvContent += `${serialNumber},${entryDate},${arrivalTime},${departureTime},${dayType},${overtimeHours},${overtimePay}\r\n`;
+      });
+      
+      // Add totals row
+      csvContent += `TOTAL,,,,,${totalOvertime},${totalOvertimePay}\r\n`;
+      
+      // Create download link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      
+      // Generate filename
+      const filename = `Overtime_Report_${employeeName.replace(/\s+/g, '_')}_${month}_${year}.csv`;
+      link.setAttribute("download", filename);
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Show success message
+      alert(`CSV file "${filename}" has been generated successfully!`);
+    }
 
     function printPage() {
       // Get the entered year and month
       const enteredYear = document.getElementById('year').value;
       const enteredMonth = document.getElementById('month').value;
       const overtimeRate = document.getElementById('overtimeRate').value;
+      const employeeName = document.getElementById('employeeName').value || 'Employee';
       
       // Calculate total overtime before printing
       calculateTotalOvertime();
       
       // Get selected time limit
-      const timeLimit = document.getElementById('timeLimit1').checked ? 
-        "6:30 AM to 8:30 PM" : "6:00 AM to 10:00 PM";  // Updated time limit option
+      let timeLimit;
+      if (document.getElementById('timeLimit1').checked) {
+        timeLimit = "6:30 AM to 8:30 PM";
+      } else if (document.getElementById('timeLimit2').checked) {
+        timeLimit = "6:00 AM to 10:00 PM";
+      } else {
+        const customStart = document.getElementById('customStart').value;
+        const customEnd = document.getElementById('customEnd').value;
+        timeLimit = `Custom: ${customStart} to ${customEnd}`;
+      }
 
       // Open a new window for printing
       const printWindow = window.open('', '_blank');
@@ -504,6 +985,7 @@
               padding: 20px;
               border-radius: 8px;
               border-left: 4px solid #4361ee;
+              margin-bottom: 30px;
             }
             .footer {
               margin-top: 40px;
@@ -516,6 +998,14 @@
               padding-top: 10px;
               width: 200px;
             }
+            @media print {
+              .no-print {
+                display: none;
+              }
+              body {
+                margin: 10px;
+              }
+            }
           </style>
         </head>
         <body>
@@ -526,6 +1016,7 @@
 
           <div class="info">
             <div class="info-item">
+              <p><strong>Employee:</strong> ${employeeName}</p>
               <p><strong>Month:</strong> ${enteredMonth}</p>
               <p><strong>Year:</strong> ${enteredYear}</p>
             </div>
@@ -535,16 +1026,22 @@
             </div>
           </div>
 
+          <div class="summary">
+            <h3>Summary</h3>
+            <p><strong>Total Overtime Hours:</strong> ${totalOvertime.toFixed(2)} hours</p>
+            <p><strong>Total Overtime Pay:</strong> ${totalOvertimePay.toFixed(2)} LKR</p>
+          </div>
+
           <table>
             <thead>
               <tr>
-                <th>Serial Number</th>
+                <th>Serial No.</th>
+                <th>Date</th>
                 <th>Arrival Time</th>
                 <th>Departure Time</th>
-                <th>Weekday</th>
-                <th>Weekend</th>
-                <th>Public Holiday</th>
+                <th>Day Type</th>
                 <th>Overtime Hours</th>
+                <th>Overtime Pay (LKR)</th>
               </tr>
             </thead>
             <tbody>
@@ -553,63 +1050,71 @@
       // Add rows to the print window
       const rows = document.querySelectorAll('.dataRow');
       let totalOvertimeForPrint = 0;
+      let totalOvertimePayForPrint = 0;
+      const overtimeRateForPrint = parseFloat(overtimeRate) || 0;
       
       rows.forEach(row => {
         const serialNumber = row.querySelector('.serialNumber').value;
+        const entryDate = row.querySelector('.entryDate').value;
         const arrivalTime = row.querySelector('.arrivalTime').value;
         const departureTime = row.querySelector('.departureTime').value;
-        const weekdayCheckbox = row.querySelector('.weekdayCheckbox').checked;
-        const weekendCheckbox = row.querySelector('.weekendCheckbox').checked;
-        const publicHolidayCheckbox = row.querySelector('.publicHolidayCheckbox').checked;
-        const totalOvertime = row.querySelector('.totalOvertime').textContent;
         
-        if (totalOvertime !== '-') {
-          totalOvertimeForPrint += parseFloat(totalOvertime);
+        // Determine day type
+        let dayType = "Weekday";
+        if (row.querySelector('.weekendCheckbox').checked) dayType = "Weekend";
+        if (row.querySelector('.publicHolidayCheckbox').checked) dayType = "Holiday";
+        
+        const totalOvertimeCell = row.querySelector('.totalOvertime').textContent;
+        const overtimeHours = totalOvertimeCell !== '-' ? parseFloat(totalOvertimeCell) : 0;
+        const overtimePay = overtimeHours * overtimeRateForPrint;
+        
+        if (totalOvertimeCell !== '-') {
+          totalOvertimeForPrint += overtimeHours;
+          totalOvertimePayForPrint += overtimePay;
         }
 
         printWindow.document.write(`
           <tr>
             <td>${serialNumber}</td>
+            <td>${entryDate}</td>
             <td>${arrivalTime}</td>
             <td>${departureTime}</td>
-            <td>${weekdayCheckbox ? 'Yes' : 'No'}</td>
-            <td>${weekendCheckbox ? 'Yes' : 'No'}</td>
-            <td>${publicHolidayCheckbox ? 'Yes' : 'No'}</td>
-            <td>${totalOvertime}</td>
+            <td>${dayType}</td>
+            <td>${overtimeHours.toFixed(2)}</td>
+            <td>${overtimePay.toFixed(2)}</td>
           </tr>
         `);
       });
 
       // Add summary and finish the HTML
-      const totalOvertimePay = totalOvertimeForPrint * parseFloat(overtimeRate);
-      
       printWindow.document.write(`
             </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5" style="text-align: right; font-weight: bold;">TOTAL:</td>
+                <td style="font-weight: bold;">${totalOvertimeForPrint.toFixed(2)}</td>
+                <td style="font-weight: bold;">${totalOvertimePayForPrint.toFixed(2)}</td>
+              </tr>
+            </tfoot>
           </table>
-
-          <div class="summary">
-            <h3>Summary</h3>
-            <p><strong>Total Overtime Hours:</strong> ${totalOvertimeForPrint.toFixed(2)} hours</p>
-            <p><strong>Total Overtime Pay:</strong> ${totalOvertimePay.toFixed(2)} LKR</p>
-          </div>
 
           <div class="footer">
             <div class="signature">Employee Signature</div>
             <div class="signature">Manager Signature</div>
           </div>
+          
+          <div class="no-print" style="text-align: center; margin-top: 30px;">
+            <button onclick="window.print()" style="padding: 10px 20px; background-color: #4361ee; color: white; border: none; border-radius: 4px; cursor: pointer;">Print Report</button>
+          </div>
         </body>
         </html>
       `);
 
-      // Focus on the new window and initiate printing
+      // Focus on the new window
       printWindow.document.close();
       printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
     }
   </script>
-</div>
-
 </body>
+
 </html>
